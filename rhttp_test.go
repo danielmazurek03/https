@@ -48,6 +48,28 @@ func ExampleRegexpRouter() {
 	// 404
 }
 
+func ExampleRegexpRouterWithUserType() {
+	w := new(ResponseWriterMock)
+	type UserId int64
+	type P struct {
+		Id UserId `rhttp:"userId"`
+	}
+
+	f := func(w http.ResponseWriter, r *http.Request, i interface{}) {
+		params := i.(*P)
+		fmt.Printf("%v\n", params.Id)
+	}
+
+	router := NewRouter()
+	router.HandleFunc("/(userId=.*)", f, &P{})
+
+	r, _ := http.NewRequest("GET", "/1234", strings.NewReader(""))
+	router.ServeHTTP(w, r)
+
+	// Output:
+	// 1234
+}
+
 func ExampleRegexpRouterMulti() {
 	w := new(ResponseWriterMock)
 	type P struct {
