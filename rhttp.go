@@ -62,7 +62,7 @@
 // Variable Resolution
 //
 // Reflection is used to determine a scope variables appearing in the pattern.
-// At registration, an otherwise unused struct is provided as a final argument. 
+// At registration, an otherwise unused struct is provided as a final argument.
 // The router will traverse the fields of the struct searching for rhttp tags:
 //
 //     struct {
@@ -76,7 +76,7 @@
 //
 // Untagged fields are also considered if they are of an allowed type and the
 // name does not conflict with a manually tagged field.
-// 
+//
 // Any variable names used in a pattern must present in the scope defined by
 // the struct. The variables are also typed. If a pattern is matched but does
 // not type match, the route is not taken.
@@ -89,21 +89,22 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
-	"strings"
 	"strconv"
+	"strings"
 
 	"net/http"
 )
 
 type PatternCompileError struct {
-	cause errorCause
+	cause        errorCause
 	currentGroup string
-	pattern string
-	name string
-	at int
+	pattern      string
+	name         string
+	at           int
 }
 
 type errorCause int
+
 const (
 	Unterminated errorCause = iota
 	MissingVariableName
@@ -116,7 +117,7 @@ const (
 // empty interface which can be cast to the type the Handler
 // was registered with.
 type Handler interface {
-        ServeHTTP(http.ResponseWriter, *http.Request, interface{})
+	ServeHTTP(http.ResponseWriter, *http.Request, interface{})
 }
 
 type HandlerFunc func(http.ResponseWriter, *http.Request, interface{})
@@ -128,9 +129,9 @@ type RegexpRouter struct {
 }
 
 type regexpHandler struct {
-	handler Handler
-	prefix string
-	re *regexp.Regexp
+	handler    Handler
+	prefix     string
+	re         *regexp.Regexp
 	paramsType reflect.Type
 	// Indexes the position of a variable in the url to a field on the params struct
 	paramsIndex map[int]int
@@ -176,7 +177,7 @@ func (r *RegexpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Go through each handler in order added until we get a hit. Remember, they are backwards
 	for ; h >= 0 && strings.HasPrefix(path, r.routes[h].prefix); h -= 1 {
 		if is := r.routes[h].re.FindStringSubmatchIndex(path); len(is) != 0 {
-			params, err := resolveParams(path, is, r.routes[h].paramsType, r.routes[h].paramsIndex);
+			params, err := resolveParams(path, is, r.routes[h].paramsType, r.routes[h].paramsIndex)
 			if err == nil {
 				r.routes[h].handler.ServeHTTP(w, req, params)
 				return
@@ -274,9 +275,9 @@ func compilePattern(pattern string, nameToField map[string]int) (*regexp.Regexp,
 					equals = groupBegin
 				} else if r == ')' {
 					return nil, "", paramsIndex, &PatternCompileError{
-						cause: UnmatchedRightParen,
+						cause:   UnmatchedRightParen,
 						pattern: pattern,
-						at: i}
+						at:      i}
 				}
 			} else {
 				if r == '(' {
@@ -284,7 +285,7 @@ func compilePattern(pattern string, nameToField map[string]int) (*regexp.Regexp,
 				} else if r == ')' {
 					parens -= 1
 					if parens == 0 {
-						groupEnd = i+1
+						groupEnd = i + 1
 						// Check for a pending error. Now that we have
 						// read the entire group, we can give a
 						// meaningful error message.
@@ -294,24 +295,24 @@ func compilePattern(pattern string, nameToField map[string]int) (*regexp.Regexp,
 							return nil, "", paramsIndex, err
 						}
 						// Include the ) in the copied pattern, but not the =
-						regexpString += pattern[equals+1:i+1]
+						regexpString += pattern[equals+1 : i+1]
 					}
 				} else if r == '=' && equals == groupBegin {
-					name := pattern[groupBegin+1:i]
+					name := pattern[groupBegin+1 : i]
 					if len(name) == 0 {
 						err = &PatternCompileError{
 							cause: MissingVariableName,
-							at: groupBegin + 1}
+							at:    groupBegin + 1}
 					} else if !allowedName(name) {
 						err = &PatternCompileError{
 							cause: InvalidVariableName,
-							name: name,
-							at: groupBegin + 1}
+							name:  name,
+							at:    groupBegin + 1}
 					} else if _, ok := nameToField[name]; !ok {
 						err = &PatternCompileError{
 							cause: UndefinedVariable,
-							name: name,
-							at: groupBegin + 1}
+							name:  name,
+							at:    groupBegin + 1}
 					}
 					paramsIndex[nameToField[name]] = paramIndex
 					paramIndex += 1
@@ -322,9 +323,9 @@ func compilePattern(pattern string, nameToField map[string]int) (*regexp.Regexp,
 	}
 	if parens != 0 {
 		return nil, "", paramsIndex, &PatternCompileError{
-			cause: Unterminated,
+			cause:   Unterminated,
 			pattern: pattern,
-			at: groupBegin}
+			at:      groupBegin}
 	}
 
 	// Add any remaining part of the pattern outside the groups
@@ -397,11 +398,12 @@ func allowedType(k reflect.Kind) bool {
 }
 
 var allowedNameRe = regexp.MustCompile("^[a-zA-Z_]\\w*$")
+
 func allowedName(name string) bool {
 	return allowedNameRe.MatchString(name)
 }
 
-func (err* PatternCompileError) Error() string {
+func (err *PatternCompileError) Error() string {
 	switch err.cause {
 	case Unterminated:
 		return fmt.Sprintf("Pattern '%s' contains unterminated group.", err.pattern)

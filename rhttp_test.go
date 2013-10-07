@@ -2,19 +2,20 @@ package rhttp
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
-	"reflect"
 
 	"net/http"
 )
 
 type ResponseWriterMock int
-func (*ResponseWriterMock) Header() http.Header { return make(http.Header); }
-func (*ResponseWriterMock) Write(b []byte) (int, error) { return len(b), nil; }
-func (r *ResponseWriterMock) WriteHeader(code int) { *r = ResponseWriterMock(code); }
-func (r *ResponseWriterMock) GetCode() int { return int(*r); }
+
+func (*ResponseWriterMock) Header() http.Header         { return make(http.Header) }
+func (*ResponseWriterMock) Write(b []byte) (int, error) { return len(b), nil }
+func (r *ResponseWriterMock) WriteHeader(code int)      { *r = ResponseWriterMock(code) }
+func (r *ResponseWriterMock) GetCode() int              { return int(*r) }
 
 func ExampleRegexpRouter() {
 	w := new(ResponseWriterMock)
@@ -42,8 +43,8 @@ func ExampleRegexpRouter() {
 	fmt.Printf("%d\n", w.GetCode())
 
 	// Output:
-        // a
-        // b
+	// a
+	// b
 	// 404
 }
 
@@ -53,7 +54,7 @@ func ExampleRegexpRouterMulti() {
 		S string `rhttp:"s"`
 	}
 
-	f := func (name string) func(w http.ResponseWriter, r *http.Request, i interface{}) {
+	f := func(name string) func(w http.ResponseWriter, r *http.Request, i interface{}) {
 		return func(w http.ResponseWriter, r *http.Request, i interface{}) {
 			params := i.(*P)
 			fmt.Printf("%s: %s\n", name, params.S)
@@ -155,19 +156,19 @@ func ExampleRegexpRouterTyped() {
 }
 
 // This is vital for ensuring that ambiguous routes our handled in the order added
-func TestRegexpRouterRoutesSorting (t *testing.T) {
+func TestRegexpRouterRoutesSorting(t *testing.T) {
 	w := new(ResponseWriterMock)
 
 	h := 0
-	f1  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  1 }
-	f2  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  2 }
-	f3  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  3 }
-	f4  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  4 }
-	f5  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  5 }
-	f6  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  6 }
-	f7  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  7 }
-	f8  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  8 }
-	f9  := func(w http.ResponseWriter, r *http.Request, i interface{}) { h =  9 }
+	f1 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 1 }
+	f2 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 2 }
+	f3 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 3 }
+	f4 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 4 }
+	f5 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 5 }
+	f6 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 6 }
+	f7 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 7 }
+	f8 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 8 }
+	f9 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 9 }
 	f10 := func(w http.ResponseWriter, r *http.Request, i interface{}) { h = 10 }
 
 	router := NewRouter()
@@ -185,52 +186,72 @@ func TestRegexpRouterRoutesSorting (t *testing.T) {
 	h = 0
 	r, _ := http.NewRequest("GET", "/a", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 1 { t.Fatalf("Expected handler %d, got %d", 1, h) }
+	if h != 1 {
+		t.Fatalf("Expected handler %d, got %d", 1, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/a/", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 2 { t.Fatalf("Expected handler %d, got %d", 2, h) }
+	if h != 2 {
+		t.Fatalf("Expected handler %d, got %d", 2, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/a/b", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 3 { t.Fatalf("Expected handler %d, got %d", 3, h) }
+	if h != 3 {
+		t.Fatalf("Expected handler %d, got %d", 3, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/a/b/", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 4 { t.Fatalf("Expected handler %d, got %d", 4, h) }
+	if h != 4 {
+		t.Fatalf("Expected handler %d, got %d", 4, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/a/b/c", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 5 { t.Fatalf("Expected handler %d, got %d", 5, h) }
+	if h != 5 {
+		t.Fatalf("Expected handler %d, got %d", 5, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/a/b/c/", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 6 { t.Fatalf("Expected handler %d, got %d", 6, h) }
+	if h != 6 {
+		t.Fatalf("Expected handler %d, got %d", 6, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/b", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 7 { t.Fatalf("Expected handler %d, got %d", 7, h) }
+	if h != 7 {
+		t.Fatalf("Expected handler %d, got %d", 7, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/b/", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 8 { t.Fatalf("Expected handler %d, got %d", 8, h) }
+	if h != 8 {
+		t.Fatalf("Expected handler %d, got %d", 8, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/b/c", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 9 { t.Fatalf("Expected handler %d, got %d", 9, h) }
+	if h != 9 {
+		t.Fatalf("Expected handler %d, got %d", 9, h)
+	}
 
 	h = 0
 	r, _ = http.NewRequest("GET", "/b/c/", strings.NewReader(""))
 	router.ServeHTTP(w, r)
-	if h != 10 { t.Fatalf("Expected handler %d, got %d", 10, h) }
+	if h != 10 {
+		t.Fatalf("Expected handler %d, got %d", 10, h)
+	}
 }
 
 func TestCompilePatternSimple(t *testing.T) {
@@ -374,9 +395,9 @@ func TestReadParamsNil(t *testing.T) {
 func TestReadParamsTags(t *testing.T) {
 	var params struct {
 		F float64 `rhttp:"v1"`
-		U uint `rhttp:"v2"`
-		S string `rhttp:"v3"`
-		I int `rhttp:"v4"`
+		U uint    `rhttp:"v2"`
+		S string  `rhttp:"v3"`
+		I int     `rhttp:"v4"`
 	}
 	nameToField, _, err := readParams(&params)
 	exNameToField := map[string]int{"v1": 0, "v2": 1, "v3": 2, "v4": 3}
@@ -398,7 +419,7 @@ func TestReadParamsFields(t *testing.T) {
 func TestReadParamsMix(t *testing.T) {
 	var params struct {
 		F float64 `rhttp:"v1"`
-		U uint `rhttp:"v2"`
+		U uint    `rhttp:"v2"`
 		S string
 		I int
 	}
@@ -475,8 +496,8 @@ func TestResolveParams(t *testing.T) {
 		I int
 	}
 	path := "/1.2/1/abc/-1"
-	is := []int{0,13, 1,4, 5,6, 7,10, 11,13}
-	index := map[int]int{0:0, 1:1, 2:2, 3:3}
+	is := []int{0, 13, 1, 4, 5, 6, 7, 10, 11, 13}
+	index := map[int]int{0: 0, 1: 1, 2: 2, 3: 3}
 	ty := reflect.TypeOf(params{})
 	expect := params{1.2, 1, "abc", -1}
 	assertResolveParams(t, path, is, ty, index, &expect)
@@ -487,8 +508,8 @@ func TestResolveParamsBadTypeFails(t *testing.T) {
 		U uint
 	}
 	path := "/abc/"
-	is := []int{0,5, 1,4}
-	index := map[int]int{0:0}
+	is := []int{0, 5, 1, 4}
+	index := map[int]int{0: 0}
 	ty := reflect.TypeOf(params{})
 	_, err := resolveParams(path, is, ty, index)
 	if err == nil {
@@ -571,4 +592,3 @@ func strIntMapEq(a, b map[string]int) bool {
 	}
 	return true
 }
-
