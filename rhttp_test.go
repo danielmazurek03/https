@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"reflect"
 
 	"net/http"
 )
@@ -466,6 +467,35 @@ func TestReadParamsInvalidInterfaceFailure(t *testing.T) {
 	}
 }
 
+func TestResolveParams(t *testing.T) {
+	type params struct {
+		F float64
+		U uint
+		S string
+		I int
+	}
+	path := "/1.2/1/abc/-1"
+	is := []int{0,13, 1,4, 5,6, 7,10, 11,13}
+	index := map[int]int{0:0, 1:1, 2:2, 3:3}
+	ty := reflect.TypeOf(params{})
+	expect := params{1.2, 1, "abc", -1}
+	assertResolveParams(t, path, is, ty, index, &expect)
+}
+
+func TestResolveParamsBadTypeFails(t *testing.T) {
+	type params struct {
+		U uint
+	}
+	path := "/abc/"
+	is := []int{0,5, 1,4}
+	index := map[int]int{0:0}
+	ty := reflect.TypeOf(params{})
+	_, err := resolveParams(path, is, ty, index)
+	if err == nil {
+		t.Fatalf("Expected error")
+	}
+}
+
 func assertCompilePattern(t *testing.T, re, exRe *regexp.Regexp, prefix, exPrefix string,
 	paramsIndex, exParamsIndex map[int]int, err error) {
 
@@ -504,6 +534,17 @@ func assertReadParams(t *testing.T, nameToField, exNameToField map[string]int, e
 	}
 	if !strIntMapEq(nameToField, exNameToField) {
 		t.Fatalf("Expected nameToField `%v`, got `%v`\n", nameToField, exNameToField)
+	}
+}
+
+func assertResolveParams(t *testing.T, path string, matchIndices []int, paramsType reflect.Type,
+	paramsIndex map[int]int, expect interface{}) {
+	params, err := resolveParams(path, matchIndices, paramsType, paramsIndex)
+	if err != nil {
+		t.Fatalf("Unexpected error `%v`\n", err)
+	}
+	if !reflect.DeepEqual(params, expect) {
+		t.Fatalf("Expected `%v`, got `%v`\n", expect, params)
 	}
 }
 

@@ -171,60 +171,58 @@ func (r *RegexpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	h := sort.Search(len(r.routes), func(i int) bool {
 		return r.routes[i].prefix > path
 	})
+	h -= 1 // We went past the end of the matching prefixes, backtrack one
 
 	// Go through each handler in order added until we get a hit. Remember, they are backwards
-keepLooking:
-	// Note[crc] This decrement must be placed after keepLooking, as it is no use
-	// coming back to only find the same route again. It happens I got lucky and
-	// the usual code path requires the decrement anyway.
-	h -= 1 // We went past the end of the matching prefixes, backtrack one
-	is := []int{}
 	for ; h >= 0 && strings.HasPrefix(path, r.routes[h].prefix); h -= 1 {
-		if is = r.routes[h].re.FindStringSubmatchIndex(path); len(is) != 0 {
-			break;
+		if is := r.routes[h].re.FindStringSubmatchIndex(path); len(is) != 0 {
+			params, err := resolveParams(path, is, r.routes[h].paramsType, r.routes[h].paramsIndex);
+			if err == nil {
+				r.routes[h].handler.ServeHTTP(w, req, params)
+				return
+			}
 		}
 	}
+	http.NotFound(w, req)
+}
 
-	if len(is) == 0 {
-		http.NotFound(w, req); return
-	}
-
+func resolveParams(path string, matchIndices []int,
+	paramsType reflect.Type, paramsIndex map[int]int) (interface{}, error) {
 	// If no params we're registered on this route, there is no need to do anything more.
-	if r.routes[h].paramsType == nil {
-		r.routes[h].handler.ServeHTTP(w, req, nil)
-		return
+	if paramsType == nil {
+		return paramsType, nil
 	}
 
 	// extract the variable values in the outer most submatches of the regexp
 	var vals []string
 	matchEnd := 0
-	for i := 2; i < len(is); i += 2 {
-		if is[i] >= matchEnd {
-			vals = append(vals, path[is[i]:is[i+1]])
-			matchEnd = is[i+1]
+	for i := 2; i < len(matchIndices); i += 2 {
+		if matchIndices[i] >= matchEnd {
+			vals = append(vals, path[matchIndices[i]:matchIndices[i+1]])
+			matchEnd = matchIndices[i+1]
 		}
 	}
 
-	// Create the params, checking types. If the types don't go back and keep looking
-	params := reflect.New(r.routes[h].paramsType)
-	for f, v := range r.routes[h].paramsIndex {
+	// Create the params, checking types.
+	params := reflect.New(paramsType)
+	for f, v := range paramsIndex {
 		value := params.Elem().Field(f)
 		switch value.Type().Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			if val, err := strconv.ParseInt(vals[v], 10, 64); err != nil {
-				goto keepLooking;
+				return nil, err
 			} else {
 				value.SetInt(val)
 			}
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			if val, err := strconv.ParseUint(vals[v], 10, 64); err != nil {
-				goto keepLooking;
+				return nil, err
 			} else {
 				value.SetUint(val)
 			}
 		case reflect.Float32, reflect.Float64:
 			if val, err := strconv.ParseFloat(vals[v], 64); err != nil {
-				goto keepLooking;
+				return nil, err
 			} else {
 				value.SetFloat(val)
 			}
@@ -235,8 +233,7 @@ keepLooking:
 			panic(fmt.Sprintf("Cannot set type %s", value.Kind()))
 		}
 	}
-
-	r.routes[h].handler.ServeHTTP(w, req, params.Interface())
+	return params.Interface(), nil
 }
 
 func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request, params interface{}) {
