@@ -68,7 +68,7 @@ patterns have been exhausted.
 Variable Resolution
 -------------------
 
-Reflection is used to determine a scope variables appearing in the pattern.
+Reflection is used to determine a scope for variable names appearing in the pattern.
 At registration, an otherwise unused struct is provided as a final argument. 
 The router will traverse the fields of the struct searching for rhttp tags:
 
@@ -86,7 +86,7 @@ to meet these conditions will result in a run time panic.
 Untagged fields are also considered if they are of an allowed type and the
 name does not conflict with a manually tagged field.
 
-Any variable names used in a pattern must present in the scope defined by
+Any variable names used in a pattern must be present in the scope defined by
 the struct. The variables are also typed. If a pattern is matched but does
 not type match, the route is not taken.
 
