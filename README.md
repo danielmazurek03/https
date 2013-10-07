@@ -66,6 +66,7 @@ pattern with the same prefix will be tried, and so forth until all registered
 patterns have been exhausted.
 
 Variable Resolution
+-------------------
 
 Reflection is used to determine a scope variables appearing in the pattern.
 At registration, an otherwise unused struct is provided as a final argument. 
