@@ -211,19 +211,19 @@ func resolveParams(path string, matchIndices []int,
 		value := params.Elem().Field(f)
 		switch value.Type().Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			if val, err := strconv.ParseInt(vals[v], 10, 64); err != nil {
+			if val, err := strconv.ParseInt(vals[v], 10, value.Type().Bits()); err != nil {
 				return nil, err
 			} else {
 				value.SetInt(val)
 			}
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			if val, err := strconv.ParseUint(vals[v], 10, 64); err != nil {
+			if val, err := strconv.ParseUint(vals[v], 10, value.Type().Bits()); err != nil {
 				return nil, err
 			} else {
 				value.SetUint(val)
 			}
 		case reflect.Float32, reflect.Float64:
-			if val, err := strconv.ParseFloat(vals[v], 64); err != nil {
+			if val, err := strconv.ParseFloat(vals[v], value.Type().Bits()); err != nil {
 				return nil, err
 			} else {
 				value.SetFloat(val)

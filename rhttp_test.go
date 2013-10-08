@@ -539,6 +539,20 @@ func TestResolveParamsBadTypeFails(t *testing.T) {
 	}
 }
 
+func TestResolveParamsBadSize(t *testing.T) {
+	type params struct {
+		U uint8
+	}
+	path := "/256/"
+	is := []int{0, 5, 1, 4}
+	index := map[int]int{0: 0}
+	ty := reflect.TypeOf(params{})
+	_, err := resolveParams(path, is, ty, index)
+	if err == nil {
+		t.Fatalf("Expected error")
+	}
+}
+
 func assertCompilePattern(t *testing.T, re, exRe *regexp.Regexp, prefix, exPrefix string,
 	paramsIndex, exParamsIndex map[int]int, err error) {
 
