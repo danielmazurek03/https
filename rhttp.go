@@ -359,8 +359,8 @@ func readParams(params interface{}) (nameToField map[string]int, paramsType refl
 	}
 	paramsType = v.Type()
 	// Parse struct tags and use user specified variable name
-	for i := 0; i < v.NumField(); i += 1 {
-		f := v.Type().Field(i)
+	for i := 0; i < paramsType.NumField(); i += 1 {
+		f := paramsType.Field(i)
 		tag := f.Tag.Get("rhttp")
 		if len(tag) != 0 {
 			if !allowedName(tag) {
